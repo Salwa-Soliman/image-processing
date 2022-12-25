@@ -1,6 +1,16 @@
 # image-processing
 This project allows you to create resized images and save them in your local machine.
-End Point is /api/images
+Main endpoint is /api/images
+
+# Getting Started
+- install dependencies => npm i
+- For linting => npm run lint
+- Use npm run lint:f for any fixes
+- Compile ts files => npm run build
+- Run ts Files => npm run dev
+- Run compiled code => npm start
+- Run tests => npm run test
+
 You're expected to pass some queries (image, width, height)
  - If image query is missing, you'll get response <Bad Request .. No Image Selected!!>
  - Otherwise,

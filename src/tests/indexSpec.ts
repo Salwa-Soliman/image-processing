@@ -1,7 +1,8 @@
 import supertest from 'supertest';
 import app from '../index';
 import path from 'path';
-import { promises as fs, existsSync } from 'fs';
+import resizeImageHandler from './../utils/resizeImage';
+import QueryString from 'qs';
 
 const req = supertest(app);
 const resizedDir = path.join(__dirname, '..', '..', 'assets', 'resized-images');
@@ -11,7 +12,7 @@ describe('Testing endpoint status codes', () => {
     await req.get('/api/images').expect(500);
   });
 
-  it('Should return 404 if image is missing', async () => {
+  it('Should return 404 if image is NOT found', async () => {
     await req.get('/api/images?image=salwa.jpg').expect(404);
   });
 
@@ -21,28 +22,84 @@ describe('Testing endpoint status codes', () => {
 });
 
 describe('Testing endpoint with image, width and height queries', () => {
-  it('Should create resized-images folder if image exists', async () => {
+  it("Should use original width & height if they're not included in query => fjord-1920x1280.jpeg", async () => {
+    // send request
     await req.post('/api/images?image=fjord.jpg');
-    expect(existsSync(resizedDir)).toBeTruthy();
-    const resizedImagePath = path.join(resizedDir, 'fjord-1920x1280.jpeg');
-    expect(existsSync(resizedImagePath)).toBeTruthy();
+    // mock req.query
+    const query = {
+      image: 'fjord.jpg',
+    } as unknown as QueryString.ParsedQs;
+    // expected result
+    const expectedResizedImage = path.join(resizedDir, 'fjord-1920x1280.jpeg');
+    // actual result
+    const resizedImage = await resizeImageHandler(query);
+    // test
+    expect(resizedImage).toBe(expectedResizedImage);
   });
 
-  it('Should create resized image => fjord-200x200.jpg', async () => {
+  it('Should ignore characters in width & height queries', async () => {
+    // send request
+    await req.post('/api/images?image=fjord.jpg&width=1080px&height=500mm');
+    // mock req.query
+    const query = {
+      image: 'fjord.jpg',
+      width: '1080px',
+      height: '500mm',
+    } as unknown as QueryString.ParsedQs;
+    // expected result
+    const expectedResizedImage = path.join(resizedDir, 'fjord-1080x500.jpeg');
+    // actual result
+    const resizedImage = await resizeImageHandler(query);
+    // test
+    expect(resizedImage).toBe(expectedResizedImage);
+  });
+
+  it('Should create resized image => fjord-200x200.jpeg', async () => {
+    // send request
     await req.post('/api/images?image=fjord.jpg&width=200&height=200');
-    const resizedImagePath = path.join(resizedDir, 'fjord-200x200.jpeg');
-    expect(existsSync(resizedImagePath)).toBeTruthy();
+    // mock req.query
+    const query = {
+      image: 'fjord.jpg',
+      width: 200,
+      height: 200,
+    } as unknown as QueryString.ParsedQs;
+    // expected result
+    const expectedResizedImage = path.join(resizedDir, 'fjord-200x200.jpeg');
+    // actual result
+    const resizedImage = await resizeImageHandler(query);
+    // test
+    expect(resizedImage).toBe(expectedResizedImage);
   });
 
   it('Should use original height if height query is missing', async () => {
-    await req.post('/api/images?image=fjord.jpg&width=200');
-    const resizedImagePath = path.join(resizedDir, 'fjord-200x1280.jpeg');
-    expect(existsSync(resizedImagePath)).toBeTruthy();
+    // send request
+    await req.post('/api/images?image=fjord.jpg&width=300');
+    // mock req.query
+    const query = {
+      image: 'fjord.jpg',
+      width: 300,
+    } as unknown as QueryString.ParsedQs;
+    // expected result
+    const expectedResizedImage = path.join(resizedDir, 'fjord-300x1280.jpeg');
+    // actual result
+    const resizedImage = await resizeImageHandler(query);
+    // test
+    expect(resizedImage).toBe(expectedResizedImage);
   });
 
   it('Should use original width if width query is missing', async () => {
+    // send request
     await req.post('/api/images?image=fjord.jpg&height=200');
-    const resizedImagePath = path.join(resizedDir, 'fjord-1920x1280.jpeg');
-    expect(existsSync(resizedImagePath)).toBeTruthy();
+    // mock req.query
+    const query = {
+      image: 'fjord.jpg',
+      height: 200,
+    } as unknown as QueryString.ParsedQs;
+    // expected result
+    const expectedResizedImage = path.join(resizedDir, 'fjord-1920x200.jpeg');
+    // actual result
+    const resizedImage = await resizeImageHandler(query);
+    // test
+    expect(resizedImage).toBe(expectedResizedImage);
   });
 });

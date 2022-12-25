@@ -1,49 +1,23 @@
-import express from 'express';
-import path from 'path';
-import sharp, { AvailableFormatInfo, FormatEnum } from 'sharp';
-import resizeImage from './../utils/resizeImage';
+import express, { Request, Response } from 'express';
+import resizeImageHandler from './../utils/resizeImage';
 
 const routes = express.Router();
-routes.get('/', (_, res) => {
+routes.get('/', (_, res: Response) => {
   res.send('<h1>Main Route</h1>');
 });
 
-routes.get('/api/images', async (req, res) => {
+routes.get('/api/images', async (req: Request, res: Response) => {
   // case no image selected
   if (!req.query.image) {
     res.status(500).send(`<h1>Bad Request .. No Image Selected!!</h1>`);
     return;
   }
 
-  const imagePath = path.join(
-    __dirname,
-    '..',
-    '..',
-    'assets',
-    'images',
-    req.query.image as unknown as string
-  );
-
   try {
-    const {
-      width: originalWidth,
-      height: originalHeight,
-      format,
-    } = await sharp(imagePath).metadata();
-
-    const width = (req.query.width || originalWidth) as number,
-      height = (req.query.height || originalHeight) as number;
-
-    const newImage = await resizeImage(
-      imagePath,
-      +width,
-      +height,
-      format as unknown as keyof FormatEnum | AvailableFormatInfo
-    );
-
-    res.sendFile(newImage);
+    const resizedImage = await resizeImageHandler(req.query);
+    res.sendFile(resizedImage);
   } catch (error) {
-    console.log('An error occurred', error);
+    console.error('An error occurred', error);
     res.status(404).send('<h1>Image NOT Found!!</h1>');
   }
 });

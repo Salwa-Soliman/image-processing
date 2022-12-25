@@ -1,28 +1,43 @@
 import path from 'path';
 import { promises as fs, existsSync } from 'fs';
-import sharp, { AvailableFormatInfo, FormatEnum } from 'sharp';
+import sharp from 'sharp';
+import QueryString from 'qs';
 
-const resizeImage = async (
-  imagePath: string,
-  width: number,
-  height: number,
-  format: keyof FormatEnum | AvailableFormatInfo
-) => {
+const resizeImageHandler = async (
+  query: QueryString.ParsedQs
+): Promise<string> => {
+  const image = query.image as string;
+
+  const imagePath = path.join(
+    __dirname,
+    '..',
+    '..',
+    'assets',
+    'images',
+    image as string
+  );
+
+  const {
+    width: originalWidth,
+    height: originalHeight,
+    format,
+  } = await sharp(imagePath).metadata();
+
+  const width = parseInt(query.width as string) || originalWidth;
+  const height = parseInt(query.height as string) || originalHeight;
+
   const resizedDir = path.join(
-      __dirname,
-      '..',
-      '..',
-      'assets',
-      'resized-images'
-    ),
-    image = path.basename(imagePath),
-    resizedImagePath = path.join(
-      resizedDir,
-      `${image.substring(
-        0,
-        image.lastIndexOf('.')
-      )}-${width}x${height}.${format}`
-    );
+    __dirname,
+    '..',
+    '..',
+    'assets',
+    'resized-images'
+  );
+
+  const resizedImagePath = path.join(
+    resizedDir,
+    `${image.substring(0, image.lastIndexOf('.'))}-${width}x${height}.${format}`
+  );
 
   // create resized-images directory if it doesn't exist
   if (!existsSync(resizedDir)) {
@@ -38,7 +53,7 @@ const resizeImage = async (
           width,
           height,
         })
-        .toFormat(format)
+        .toFormat(format as keyof sharp.FormatEnum)
         .toFile(resizedImagePath);
     } catch (error) {
       console.log('Error resizing image ', error);
@@ -48,4 +63,4 @@ const resizeImage = async (
   return resizedImagePath;
 };
 
-export default resizeImage;
+export default resizeImageHandler;

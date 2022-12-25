@@ -1,8 +1,9 @@
-import supertest from 'supertest';
-import app from '../index';
-import path from 'path';
-import resizeImageHandler from './../utils/resizeImage';
 import QueryString from 'qs';
+import path from 'path';
+import { promises as fs } from 'fs';
+import supertest from 'supertest';
+import resizeImageHandler from './../utils/resizeImage';
+import app from '../index';
 
 const req = supertest(app);
 const resizedDir = path.join(__dirname, '..', '..', 'assets', 'resized-images');
@@ -22,6 +23,10 @@ describe('Testing endpoint status codes', () => {
 });
 
 describe('Testing endpoint with image, width and height queries', () => {
+  afterEach(async () => {
+    await fs.rm(resizedDir, { recursive: true, force: true });
+  });
+
   it("Should use original width & height if they're not included in query => fjord-1920x1280.jpeg", async () => {
     // send request
     await req.post('/api/images?image=fjord.jpg');
